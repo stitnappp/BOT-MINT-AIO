@@ -3,11 +3,52 @@ import fs from 'fs';
 import readline from 'readline';
 import { ethers } from 'ethers';
 
-/* =========================
-   CHAIN LIST (LENGKAP)
-   - Kamu bisa menambah/override via chains.json
-   - Format chains.json: [{ "name":"Nama", "key":"unik", "rpc":"https://..." }, ...]
-   ========================= */
+/* ====== Watermark & Coloring ====== */
+const WATERMARK = 'ITSMorvo';
+
+/* ANSI helpers */
+const C = {
+  reset: '\x1b[0m',
+  bold:  '\x1b[1m',
+  dim:   '\x1b[2m',
+  fg: (n)=>`\x1b[${n}m`, // 30–37 basic colors
+};
+const COLORS = [31,33,32,36,34,35]; // red,yellow,green,cyan,blue,magenta
+
+const colorize = (text, colorCode) => `${C.fg(colorCode)}${text}${C.reset}`;
+const rainbow = (text) =>
+  text.split('').map((ch,i)=> colorize(ch, COLORS[i % COLORS.length])).join('');
+
+const line = (w=50, ch='─') => ch.repeat(w);
+
+/* Simple ASCII banner (monospace friendly) */
+const ASCII = [
+  " _   _ _______ ______      ___    ___   ___ ",
+  "| \\ | |__   __|  ____|    / _ \\  / _ \\ / _ \\",
+  "|  \\| |  | |  | |__ _____/ /_\\ \\/ /_\\ \\/ /_\\ \\",
+  "| . ` |  | |  |  __|_____|  _  ||  _  ||  _  |",
+  "| |\\  |  | |  | |____    | | | || | | || | | |",
+  "\\_| \\_/  |_|  |______|   \\_| |_/\\_| |_/\\_| |_/"
+];
+
+/* Cetak banner pelangi + watermark */
+function printBanner(title = 'NFT AIO MENU') {
+  console.log('');
+  ASCII.forEach(row => console.log(rainbow(row)));
+  const sub = `by ${WATERMARK}`;
+  console.log(rainbow(`\n${title}  `) + colorize(`(${sub})`, 36));
+  console.log(colorize(line(64), 34));
+}
+
+/* Banner kecil untuk sub-menu (mis. pickChain) */
+function printSubBanner(title = 'Select Chain') {
+  console.log('');
+  console.log(rainbow(`=== ${title} === `) + colorize(`by ${WATERMARK}`, 36));
+  console.log(colorize(line(48), 34));
+}
+
+/* ========== CHAIN LIST (lengkap) ========== */
+/* Bisa tambah/override via chains.json: [{ "name":"Nama", "key":"unik", "rpc":"https://..." }] */
 const DEFAULT_CHAINS = [
   // Ethereum + testnet
   { name: 'Ethereum Mainnet', key: 'mainnet',  rpc: 'https://cloudflare-eth.com' },
@@ -58,9 +99,7 @@ const DEFAULT_CHAINS = [
   { name: 'Palm',             key: 'palm',     rpc: 'https://palm-mainnet.public.blastapi.io' }
 ];
 
-/* =========================
-   UTIL & CORE
-   ========================= */
+/* ========== Utils & Core ========== */
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const ask = (q) => new Promise(res => rl.question(q, ans => res(ans.trim())));
 const yes = (s) => /^y(es)?$/i.test(s || '');
@@ -70,19 +109,16 @@ function saveJSON(path, obj) { fs.writeFileSync(path, JSON.stringify(obj, null, 
 
 function getAllChains() {
   const extra = loadJSON('./chains.json', []);
-  // dedupe by key (extra overrides default with same key)
   const map = new Map(DEFAULT_CHAINS.map(c => [c.key, c]));
   for (const c of extra) if (c?.key && c?.rpc) map.set(c.key, c);
   return Array.from(map.values());
 }
-
 function rpcFor(nameOrKey, override) {
   if (override) return override;
   const all = getAllChains();
   const k = (nameOrKey || '').toLowerCase();
   return all.find(c => c.key === k)?.rpc || null;
 }
-
 function fmtEth(wei) { return ethers.formatEther(wei ?? 0n); }
 
 async function notify(text) {
@@ -97,49 +133,49 @@ async function notify(text) {
   } catch {}
 }
 
-/* =========================
-   PICK CHAIN (dengan nomor, auto-paging)
-   ========================= */
+/* ========== Picker Chain (nomor + paging + warna) ========== */
 async function pickChain() {
   const CHAINS = getAllChains();
-  const PAGE = 12; // tampil 12 per halaman biar enak di Termux
+  const PAGE = 12;
   let page = 0;
 
   while (true) {
     const start = page * PAGE;
     const slice = CHAINS.slice(start, start + PAGE);
-    console.log('\nPilih Chain:');
-    slice.forEach((c, i) => console.log(`${i + 1}) ${c.name}`));
+
+    printSubBanner('Select Chain');
+
+    slice.forEach((c, i) => {
+      const idx = colorize(`${i+1}`, COLORS[i % COLORS.length]);
+      console.log(`${idx}) ${c.name}`);
+    });
+
     const extraIdx = slice.length + 1;
     const nextIdx  = slice.length + 2;
     const prevIdx  = slice.length + 3;
-    console.log(`${extraIdx}) Lainnya (isi manual)`);
-    if (start + PAGE < CHAINS.length) console.log(`${nextIdx}) Halaman berikutnya ▶`);
-    if (page > 0)                     console.log(`${prevIdx}) ◀ Halaman sebelumnya`);
 
-    const ans = await ask('Nomor: ');
-    const num = Number(ans);
+    console.log(colorize(`${extraIdx}) Lainnya (manual RPC)`, 36));
+    if (start + PAGE < CHAINS.length) console.log(colorize(`${nextIdx}) Next Page ▶`, 33));
+    if (page > 0)                     console.log(colorize(`${prevIdx}) ◀ Prev Page`, 33));
+
+    const num = Number(await ask(colorize('Nomor: ', 35)));
 
     if (num >= 1 && num <= slice.length) {
       return { key: slice[num - 1].key, rpc: slice[num - 1].rpc };
     }
-
     if (num === extraIdx) {
       const manualKey = await ask('Nama chain (bebas): ');
-      const manualRpc = await ask('RPC (kosongkan utk pakai default bawaan script): ');
+      const manualRpc = await ask('RPC (kosongkan utk default): ');
       return { key: manualKey, rpc: manualRpc || null };
     }
-
     if (num === nextIdx && (start + PAGE) < CHAINS.length) { page++; continue; }
     if (num === prevIdx && page > 0) { page--; continue; }
 
-    console.log('Pilihan tidak dikenal. Coba lagi.');
+    console.log(colorize('Pilihan tidak dikenal. Coba lagi.', 31));
   }
 }
 
-/* =========================
-   ETHERS & MINT CORE
-   ========================= */
+/* ========== ETHERS & Mint Core ========== */
 const DEFAULT_FUNCS = ['mint','publicMint','mintPublic','safeMint','claim'];
 
 async function getProvider(rpcUrl) {
@@ -168,13 +204,11 @@ function buildAbi(funcNames) {
   set.add('function cost() view returns (uint256)');
   return [...set];
 }
-
 async function smartPick(contract, fn, qty, overrides) {
   try { await contract[fn].staticCall(overrides); return { fn, withQty:false }; } catch {}
   try { await contract[fn].staticCall(qty, overrides); return { fn, withQty:true }; } catch {}
   return null;
 }
-
 async function discoverPrice(contract) {
   for (const f of ['price','mintPrice','cost']) {
     if (typeof contract[f] === 'function') {
@@ -183,13 +217,11 @@ async function discoverPrice(contract) {
   }
   return null;
 }
-
 function calcValueWei({ valueEth, pricePerNftEth, qty }) {
   if (valueEth != null && valueEth !== '') return ethers.parseEther(String(valueEth));
   if (pricePerNftEth != null && pricePerNftEth !== '') return ethers.parseEther(String(pricePerNftEth)) * BigInt(qty || 1);
   return 0n;
 }
-
 async function mintCore({ wallet, contractAddr, qty, valueWei, fnList }) {
   const abi = buildAbi(fnList);
   const c = new ethers.Contract(contractAddr, abi, wallet);
@@ -198,12 +230,10 @@ async function mintCore({ wallet, contractAddr, qty, valueWei, fnList }) {
     ? { value: valueWei, maxFeePerGas: fee.maxFeePerGas, maxPriorityFeePerGas: fee.maxPriorityFeePerGas }
     : { value: valueWei, gasPrice: fee.gasPrice };
 
-  // pilih fungsi
   let picked = null;
   for (const fn of fnList) { picked = await smartPick(c, fn, qty, overrides); if (picked) break; }
   if (!picked) throw new Error('Tidak ada fungsi mint yang cocok.');
 
-  // estimasi gas + buffer
   try {
     const est = picked.withQty ? await c.estimateGas[picked.fn](qty, overrides)
                                : await c.estimateGas[picked.fn](overrides);
@@ -219,9 +249,7 @@ async function mintCore({ wallet, contractAddr, qty, valueWei, fnList }) {
   return { dryRun: false, hash: tx.hash, status: rcpt.status, block: rcpt.blockNumber, fn: picked.fn, withQty: picked.withQty };
 }
 
-/* =========================
-   MENU ACTIONS
-   ========================= */
+/* ========== MENU ACTIONS ========== */
 async function actionCheckBalance() {
   const { key: chain, rpc } = await pickChain();
   const url = rpc || rpcFor(chain);
@@ -229,7 +257,6 @@ async function actionCheckBalance() {
   const [bal, net] = await Promise.all([wallet.provider.getBalance(wallet.address), wallet.provider.getNetwork()]);
   console.log(`\nAlamat: ${wallet.address}\nChain: ${net.name} (${net.chainId})\nSaldo: ${fmtEth(bal)} native\n`);
 }
-
 async function actionMintSingle() {
   const { key: chain, rpc } = await pickChain();
   const contract = await ask('Alamat kontrak: ');
@@ -265,7 +292,6 @@ async function actionMintSingle() {
     await notify(`❌ Mint gagal di ${chain}\nAlasan: ${e.shortMessage ?? e.message}`);
   }
 }
-
 async function actionMintOmni() {
   const targets = loadJSON('./targets.json', []);
   if (!targets.length) return console.log('targets.json kosong.');
@@ -287,7 +313,6 @@ async function actionMintOmni() {
     }
   }
 }
-
 async function actionAddTarget() {
   const { key: chainKey, rpc } = await pickChain();
   const contract = await ask('Alamat kontrak: ');
@@ -309,7 +334,6 @@ async function actionAddTarget() {
   saveJSON('./targets.json', targets);
   console.log('Target ditambahkan.');
 }
-
 async function actionListTargets() {
   const targets = loadJSON('./targets.json', []);
   if (!targets.length) return console.log('targets.json kosong.');
@@ -321,7 +345,6 @@ async function actionListTargets() {
     console.log(`${i+1}) ${t.name} • ${t.contract} • qty=${t.qty ?? 1} • ${price}${rpcTag}`);
   });
 }
-
 async function actionDeleteTarget() {
   const targets = loadJSON('./targets.json', []);
   if (!targets.length) return console.log('targets.json kosong.');
@@ -334,7 +357,6 @@ async function actionDeleteTarget() {
   saveJSON('./targets.json', targets);
   console.log('Terhapus.');
 }
-
 async function actionGasNow() {
   const { key: chain, rpc } = await pickChain();
   const url = rpc || rpcFor(chain);
@@ -349,7 +371,7 @@ async function actionGasNow() {
   }
 }
 
-// Multi-wallet paralel
+/* ========== Multi-wallet paralel ========== */
 function loadMultiKeys() {
   const list = [];
   if (process.env.MULTI_PRIVATE_KEYS) list.push(...process.env.MULTI_PRIVATE_KEYS.split(',').map(s=>s.trim()).filter(Boolean));
@@ -359,7 +381,6 @@ function loadMultiKeys() {
   }
   return Array.from(new Set(list));
 }
-
 async function actionParallelMint() {
   const targets = loadJSON('./targets.json', []);
   if (!targets.length) return console.log('targets.json kosong.');
@@ -379,7 +400,7 @@ async function actionParallelMint() {
   console.log(`Menjalankan paralel ${keys.length} wallet pada ${t.name} ${t.contract}`);
   const results = await Promise.allSettled(keys.map(async (pk, i) => {
     const wallet = await getWalletByKey(pk, url);
-    await new Promise(r => setTimeout(r, i * 250)); // stagger biar nonce/fee beda
+    await new Promise(r => setTimeout(r, i * 250)); // stagger
     return mintCore({ wallet, contractAddr: t.contract, qty, valueWei, fnList });
   }));
 
@@ -393,21 +414,39 @@ async function actionParallelMint() {
   });
 }
 
-/* =========================
-   MENU UTAMA
-   ========================= */
+/* ========== MENU UTAMA ========== */
 async function mainMenu() {
-  console.log('\n=== NFT AIO MENU ===');
-  console.log('1) Cek saldo');
-  console.log('2) Mint 1 kontrak (manual)');
-  console.log('3) Mint multi-chain (targets.json)');
-  console.log('4) Tambah target');
-  console.log('5) Lihat target');
-  console.log('6) Hapus target');
-  console.log('7) Cek gas sekarang');
-  console.log('8) Mint paralel multi-wallet');
-  console.log('0) Keluar');
-  const c = await ask('Pilih nomor: ');
+  printBanner('NFT AIO MENU');
+
+  console.log(
+    colorize('1) ', 32) + 'Cek saldo'
+  );
+  console.log(
+    colorize('2) ', 33) + 'Mint 1 kontrak (manual)'
+  );
+  console.log(
+    colorize('3) ', 36) + 'Mint multi-chain (targets.json)'
+  );
+  console.log(
+    colorize('4) ', 34) + 'Tambah target'
+  );
+  console.log(
+    colorize('5) ', 35) + 'Lihat target'
+  );
+  console.log(
+    colorize('6) ', 31) + 'Hapus target'
+  );
+  console.log(
+    colorize('7) ', 33) + 'Cek gas sekarang'
+  );
+  console.log(
+    colorize('8) ', 32) + 'Mint paralel multi-wallet'
+  );
+  console.log(
+    colorize('0) ', 36) + 'Keluar'
+  );
+
+  const c = await ask(colorize('Pilih nomor: ', 35));
   switch (c) {
     case '1': await actionCheckBalance(); break;
     case '2': await actionMintSingle(); break;
@@ -418,7 +457,7 @@ async function mainMenu() {
     case '7': await actionGasNow(); break;
     case '8': await actionParallelMint(); break;
     case '0': rl.close(); return;
-    default: console.log('Pilihan tidak dikenal.');
+    default: console.log(colorize('Pilihan tidak dikenal.', 31));
   }
   return mainMenu();
 }
