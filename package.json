@@ -1,14 +1,17 @@
 {
   "name": "nft-aio",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "NFT AIO bot with ABI Finder, multi-wallet, and chain picker",
+  "type": "module",
+  "main": "aio.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node aio.mjs",
+    "dev": "node --watch aio.mjs",
+    "test": "echo \"no tests\" && exit 0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0"

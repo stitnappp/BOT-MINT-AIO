@@ -1,0 +1,12 @@
+[
+  {
+    "name": "sepolia",
+    "contract": "0x00B432583e54F61679dfb6A1B5f0c2F289F01490",
+    "qty": 1,
+    "valueEth": "0.0002",
+    "rpc": [
+      "https://eth-sepolia.g.alchemy.com/v2/VRaSB8_5iJXptBzPQl4K1ji93JzgVbe2",
+      "https://rpc.sepolia.org"
+    ]
+  }
+]

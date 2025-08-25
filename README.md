@@ -1,61 +1,55 @@
-# NFT AIO Mint Bot
+# NFT AIO Bot (by ITSMorvo)
 
-An **All-in-One NFT Minting Bot** built with Node.js and Ethers.js.  
-Supports multiple EVM-compatible chains (Ethereum L1 & L2, Polygon, BSC, Arbitrum, Optimism, zkSync, Linea, Scroll, etc.).  
-Features include single contract minting, multi-chain minting, gas checker, and multi-wallet parallel execution.
+A powerful and flexible **NFT Minting All-in-One Bot** built with **Node.js** and **ethers.js v6**.  
+Supports multiple EVM chains, automatic ABI detection, multi-wallet parallel minting, and more.
 
 ---
 
 ## Features
-
-- **Chain Selection by Number** – Easy menu to pick supported chains (Ethereum, L2s, zk-rollups, alt L1s).
-- **Single Contract Mint** – Mint NFTs from any contract interactively.
-- **Multi-Chain Minting** – Add multiple projects in `targets.json` and mint all at once.
-- **Parallel Multi-Wallet Minting** – Mint across several wallets simultaneously.
-- **Gas Price Checker** – Check real-time gas price on any supported chain.
-- **Customizable** – Add your own RPC endpoints and chains via `chains.json`.
-- **Dry Run Mode** – Simulate transactions without broadcasting (for testing).
-- **Telegram Notifications (Optional)** – Get mint status updates directly in Telegram.
+- **Automatic Minting** on multiple EVM chains (Ethereum, Polygon, Arbitrum, Optimism, Base, Linea, Scroll, zkSync, BSC, etc.).
+- **Multi-wallet Parallel Minting**: run mints for multiple wallets at once.
+- **Automatic ABI Finder**: fetch ABI from explorer and suggest mint functions.
+- **Fallback minimal ABI**: if explorer ABI fails.
+- **Check balance & gas** with status info (low/medium/high).
+- **RPC Tester**: scan all RPCs and pick fastest one.
+- **Dynamic Chain Picker** with pagination & manual RPC.
+- **DRY-RUN Mode**: simulate mint without sending tx (set `DRY_RUN=true` in `.env`).
+- **Targets File (targets.json)**: store multiple contracts for batch mints.
 
 ---
 
 ## Requirements
-
-- [Node.js](https://nodejs.org/) (v16+ recommended)
-- npm (comes with Node.js)
-- A GitHub account (for repo versioning, optional)
+- **Node.js v18+**
+- **npm or yarn**
+- **Alchemy API Key** (optional but recommended for stable RPC)
+- **Private Key** of your wallet (use test wallets first!)
 
 ---
 
 ## Installation
-
-Clone this repository and install dependencies:
-
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
 npm install
 
+Create a .env file (copy the template):
 
----
+# Required
+PRIVATE_KEY=your_private_key_here
 
-Configuration
+# Optional Alchemy API Key
+ALCHEMY_KEY=your_alchemy_api_key_here
 
-Create a .env file in the project root (never commit this file, it's ignored by .gitignore):
-
-PRIVATE_KEY=0xYOUR_PRIVATE_KEY
+# Simulation mode (true/false)
 DRY_RUN=false
-TG_BOT_TOKEN=your_telegram_bot_token   # optional
-TG_CHAT_ID=your_chat_id                # optional
-MULTI_PRIVATE_KEYS=0xkey1,0xkey2       # optional (for parallel minting)
 
-For reference, you can also create a .env.example template like this (safe for repo):
-
-PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
-DRY_RUN=false
-TG_BOT_TOKEN=your_telegram_bot_token_here
-TG_CHAT_ID=your_telegram_chat_id_here
-MULTI_PRIVATE_KEYS=0xkey1,0xkey2
+# Optional: API keys for explorers (for ABI fetch)
+ETHERSCAN_API_KEY=
+POLYGONSCAN_API_KEY=
+ARBISCAN_API_KEY=
+BASESCAN_API_KEY=
+LINEASCAN_API_KEY=
+SCROLLSCAN_API_KEY=
 
 
 ---
@@ -66,85 +60,94 @@ Run the bot:
 
 node aio.mjs
 
-You'll see an interactive menu:
+Or if you set a script in package.json:
 
-=== NFT AIO MENU ===
-1) Check wallet balance
-2) Mint single contract (manual)
-3) Mint multi-chain (targets.json)
-4) Add new target
-5) View targets
-6) Delete target
-7) Check current gas price
-8) Parallel mint (multi-wallet)
-0) Exit
+npm start
 
-Follow the on-screen prompts to perform actions.
+Menu options:
+
+1. Check balance
+
+
+2. Mint single contract (manual + ABI Finder)
+
+
+3. Mint multiple contracts (targets.json)
+
+
+4. Add target
+
+
+5. View targets
+
+
+6. Delete target
+
+
+7. Check gas price
+
+
+8. Mint parallel (multi-wallet)
+
+
+9. Test RPCs
+
+
+10. ABI Finder only (no mint)
+
+
+11. Exit
+
+
 
 
 ---
 
-Adding Chains
+Targets File (Example)
 
-By default, the bot includes many chains (Ethereum, L2s, zk-rollups, alt L1s).
-
-To add custom chains, create a chains.json file:
-
-
-[
-  { "name": "ZKFair", "key": "zkfair", "rpc": "https://rpc.zkfair.io" },
-  { "name": "Sei EVM", "key": "sei", "rpc": "https://evm-rpc.sei-apis.com" }
-]
-
-The bot will automatically load these chains and display them in the numbered menu.
-
-
----
-
-Adding Mint Targets
-
-Use menu option 4) Add target or edit targets.json manually:
+Add a targets.json:
 
 [
   {
-    "name": "mainnet",
-    "contract": "0xCONTRACT_ADDRESS",
+    "name": "sepolia",
+    "contract": "0x1234...abcd",
     "qty": 1,
-    "valueEth": "0.05",
-    "functionCandidates": ["mint","publicMint"],
-    "rpc": "https://YOUR_CUSTOM_RPC (optional)"
+    "valueEth": "0.001",
+    "functionCandidates": ["mint","claim"]
   }
 ]
 
 
 ---
 
-Notes & Security
+Changelog
 
-Never commit your .env file or private keys to GitHub (use .env.example as a safe template).
+v2.0 – 2025-08-25
 
-Use dry run mode (DRY_RUN=true) to test without broadcasting transactions.
+Added ABI Finder UI (with mint candidate suggestions)
 
-For best performance, use your own RPC endpoints (Alchemy, Infura, QuickNode, etc.) instead of public ones.
+Improved fallback mint detection (works even if static call fails)
 
-Gas costs vary per chain; always double-check before minting.
+Enhanced gas checker with low/medium/high status
 
+Added support for many EVM chains (incl. testnets)
 
+Added RPC scanner and fastest RPC picker
 
----
+Added DRY_RUN simulation mode
 
-License
+Improved multi-wallet parallel mint
 
-MIT License – feel free to use and modify.
+UI: colorful ASCII banner and dynamic menu (ITSMorvo watermark)
+
+Security: moved API keys to .env (no hardcoded API keys)
+
 
 
 ---
 
 Disclaimer
 
-This bot is for educational purposes only. You are responsible for any transactions executed. Use at your own risk.
-
----
-
-Would you like me to **add badges** (Node.js version, License, etc.) and **screenshots of the menu** for a more professional GitHub page? Or should I keep it simple like above?
-
+Use this bot at your own risk.
+Always test on testnets before mainnet.
+The author is not responsible for any financial losses.
