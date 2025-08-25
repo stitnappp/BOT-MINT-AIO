@@ -138,8 +138,6 @@ Added DRY_RUN simulation mode
 
 Improved multi-wallet parallel mint
 
-UI: colorful ASCII banner and dynamic menu (ITSMorvo watermark)
-
 Security: moved API keys to .env (no hardcoded API keys)
 
 
