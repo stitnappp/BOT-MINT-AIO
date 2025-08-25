@@ -39,7 +39,7 @@ function printSubBanner(title='Select Chain'){
   console.log(color(34, line(48)));
 }
 
-/* ====== CHAIN LIST (lengkap, bisa override via chains.json) ====== */
+/* ====== CHAIN LIST (bisa override via chains.json) ====== */
 const DEFAULT_CHAINS = [
   {
     name: 'Ethereum Mainnet',
@@ -124,8 +124,7 @@ async function notify(text){
   if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
   try{
     await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-      method:'POST',
-      headers:{ 'content-type':'application/json' },
+      method:'POST', headers:{ 'content-type':'application/json' },
       body: JSON.stringify({ chat_id: TG_CHAT_ID, text })
     });
   }catch{}
@@ -133,14 +132,10 @@ async function notify(text){
 
 /* ====== RPC Checker / Selector ====== */
 const rpcCache = new Map(); // key -> bestUrl (session)
-
-/* helper timeout */
-function timeoutAfter(ms){
-  return new Promise((_,rej)=> setTimeout(()=>rej(new Error('timeout')), ms));
-}
+function timeoutAfter(ms){ return new Promise((_,rej)=> setTimeout(()=>rej(new Error('timeout')), ms)); }
 
 /** Ping satu RPC. Return { ok, url, ms, chainId } */
-async function pingRpc(url, ms = 5000){   // TIMEOUT DIPERPANJANG 5s
+async function pingRpc(url, ms = 5000){   // TIMEOUT 5s
   const start = Date.now();
   try{
     const p = new ethers.JsonRpcProvider(url);
@@ -372,7 +367,7 @@ async function actionMintSingle(){
 async function actionMintOmni(){
   clearScreen();
   const targets = loadJSON('./targets.json', []);
-  if (!targets.length) return console.log('targets.json kosong.');
+  if (!targets.length) { console.log('targets.json kosong.'); await ask('\n(Enter untuk kembali)'); return; }
   console.log(`Menjalankan ${targets.length} target…`);
   for (const t of targets){
     try{
@@ -431,6 +426,46 @@ async function actionListTargets(){
   await ask('\n(Enter untuk kembali)');
 }
 
+/* ====== Gas Now with indikator ====== */
+async function actionGasNow(){
+  clearScreen();
+  try {
+    const { key: chain, rpc } = await pickChain();
+    const url = rpc || rpcFor(chain);
+    const provider = await getProvider(url);
+    const [net, fee] = await Promise.all([
+      provider.getNetwork(),
+      provider.getFeeData()
+    ]);
+
+    console.log(`\nChain: ${net.name} (${net.chainId})`);
+
+    let gasGwei;
+    if (fee.maxFeePerGas && fee.maxPriorityFeePerGas) {
+      gasGwei = Number(ethers.formatUnits(fee.maxFeePerGas, 'gwei'));
+      console.log(`maxFeePerGas   : ${gasGwei.toFixed(2)} gwei`);
+      console.log(`maxPriorityFee : ${Number(ethers.formatUnits(fee.maxPriorityFeePerGas,'gwei')).toFixed(2)} gwei`);
+    } else {
+      gasGwei = Number(ethers.formatUnits(fee.gasPrice ?? 0n, 'gwei'));
+      console.log(`gasPrice       : ${gasGwei.toFixed(2)} gwei`);
+    }
+
+    // Indikator kondisi gas (default ambang Ethereum L1)
+    if (gasGwei <= 20) {
+      console.log(color(32, 'Keterangan: Gas sedang rendah ✔'));
+    } else if (gasGwei <= 40) {
+      console.log(color(33, 'Keterangan: Gas sedang sedang'));
+    } else {
+      console.log(color(31, 'Keterangan: Gas sedang tinggi ⚠'));
+    }
+
+  } catch (e) {
+    console.log('Gagal membaca gas:', e.shortMessage ?? e.message);
+  }
+  await ask('\n(Enter untuk kembali)');
+}
+
+/* ====== Delete Target ====== */
 async function actionDeleteTarget(){
   clearScreen();
   const targets = loadJSON('./targets.json', []);
@@ -443,26 +478,6 @@ async function actionDeleteTarget(){
   targets.splice(idx,1);
   saveJSON('./targets.json', targets);
   console.log('Terhapus.');
-  await ask('\n(Enter untuk kembali)');
-}
-
-async function actionGasNow(){
-  clearScreen();
-  try{
-    const { key: chain, rpc } = await pickChain();
-    const url = rpc || rpcFor(chain);
-    const provider = await getProvider(url);
-    const [net, fee] = await Promise.all([provider.getNetwork(), provider.getFeeData()]);
-    console.log(`\nChain: ${net.name} (${net.chainId})`);
-    if (fee.maxFeePerGas && fee.maxPriorityFeePerGas){
-      console.log(`maxFeePerGas   : ${ethers.formatUnits(fee.maxFeePerGas,'gwei')} gwei`);
-      console.log(`maxPriorityFee : ${ethers.formatUnits(fee.maxPriorityFeePerGas,'gwei')} gwei`);
-    }else{
-      console.log(`gasPrice       : ${ethers.formatUnits(fee.gasPrice ?? 0n,'gwei')} gwei`);
-    }
-  }catch(e){
-    console.log('Gagal membaca gas:', e.shortMessage ?? e.message);
-  }
   await ask('\n(Enter untuk kembali)');
 }
 
@@ -523,7 +538,7 @@ async function actionParallelMint(){
   console.log(`Menjalankan paralel ${keys.length} wallet pada ${t.name} ${t.contract}`);
   const results = await Promise.allSettled(keys.map(async (pk,i)=>{
     const wallet = await getWalletByKey(pk, url);
-    await new Promise(r=>setTimeout(r, i*250));
+    await new Promise(r=>setTimeout(r, i*250)); // stagger kecil
     return mintCore({ wallet, contractAddr: t.contract, qty, valueWei, fnList });
   }));
 
@@ -555,7 +570,7 @@ async function mainMenu(){
   console.log(color(36,'0) ')+'Keluar');
 
   const c = await ask(color(35,'Pilih nomor: '));
-  if (!/^[0-9]$/.test(c)) {                 // VALIDASI INPUT
+  if (!/^[0-9]$/.test(c)) {
     console.log(color(31,'Masukan tidak valid. Pilih angka di daftar.'));
     await ask('\n(Enter untuk kembali)');
     return mainMenu();
