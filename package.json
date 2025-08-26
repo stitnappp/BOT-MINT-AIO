@@ -1,19 +1,30 @@
 {
-  "name": "nft-aio",
-  "version": "1.0.0",
-  "description": "NFT AIO bot with ABI Finder, multi-wallet, and chain picker",
+  "name": "bot-mint-aio",
+  "version": "1.2.0",
+  "description": "AIO NFT mint bot with ABI auto-detect, No-ABI Blast fallback, and multi-chain RPC failover.",
+  "private": true,
   "type": "module",
   "main": "aio.mjs",
   "scripts": {
     "start": "node aio.mjs",
-    "dev": "node --watch aio.mjs",
-    "test": "echo \"no tests\" && exit 0"
-  },
-  "engines": {
-    "node": ">=18"
+    "dev": "NODE_NO_WARNINGS=1 node aio.mjs",
+    "clean": "rm -rf node_modules package-lock.json",
+    "postinstall": "echo '✅ Install selesai. Jalankan: npm start'"
   },
   "dependencies": {
-    "dotenv": "^17.2.1",
-    "ethers": "^6.15.0"
-  }
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2"
+  },
+  "engines": {
+    "node": ">=18.17.0 <23"
+  },
+  "keywords": [
+    "nft",
+    "mint",
+    "ethers-v6",
+    "bot",
+    "abi"
+  ],
+  "author": "ITSMorvo",
+  "license": "MIT"
 }
