@@ -53,39 +53,90 @@ const fmtEth = v => ethers.formatEther(v ?? 0n);
 const loadJSON = (p,f=[]) => fs.existsSync(p) ? (()=>{try{return JSON.parse(fs.readFileSync(p,'utf8'));}catch{return f;}})() : f;
 const saveJSON = (p,o) => fs.writeFileSync(p, JSON.stringify(o,null,2));
 
-/* ===== Chains & RPC ===== */
+/* ===== Alchemy mapping (host name) ===== */
 const ALCHEMY_HOSTS = {
-  mainnet:'eth-mainnet', sepolia:'eth-sepolia',
-  arbitrum:'arb-mainnet', optimism:'opt-mainnet',
-  base:'base-mainnet', polygon:'polygon-mainnet',
+  mainnet:'eth-mainnet',
+  sepolia:'eth-sepolia',
+  arbitrum:'arb-mainnet',
+  optimism:'opt-mainnet',
+  base:'base-mainnet',
+  polygon:'polygon-mainnet',
   linea:'linea-mainnet'
 };
 const aUrl = k => ALCHEMY_KEY && ALCHEMY_HOSTS[k] ? `https://${ALCHEMY_HOSTS[k]}.g.alchemy.com/v2/${ALCHEMY_KEY}` : null;
 const rpcList = (k, pubs=[]) => { const a=aUrl(k); return a?[a,...pubs]:pubs; };
 
+/* ===== DEFAULT CHAINS (banyak + fallback RPC publik) ===== */
 const DEFAULT_CHAINS = [
-  { name:'Ethereum Mainnet', key:'mainnet',  rpc: rpcList('mainnet',  ['https://eth.drpc.org','https://1rpc.io/eth']) },
-  { name:'Ethereum Sepolia', key:'sepolia',  rpc: rpcList('sepolia',  ['https://rpc.sepolia.org']) },
-  { name:'Arbitrum One',     key:'arbitrum', rpc: rpcList('arbitrum', ['https://arb1.arbitrum.io/rpc']) },
-  { name:'Optimism',         key:'optimism', rpc: rpcList('optimism', ['https://mainnet.optimism.io']) },
-  { name:'Base',             key:'base',     rpc: rpcList('base',     ['https://mainnet.base.org']) },
-  { name:'Polygon PoS',      key:'polygon',  rpc: rpcList('polygon',  ['https://rpc.ankr.com/polygon']) },
-  { name:'Linea',            key:'linea',    rpc: rpcList('linea',    ['https://rpc.linea.build']) },
+  { name:'Ethereum Mainnet',   key:'mainnet',   rpc: rpcList('mainnet',  ['https://eth.drpc.org','https://1rpc.io/eth','https://rpc.ankr.com/eth']) },
+  { name:'Ethereum Sepolia',   key:'sepolia',   rpc: rpcList('sepolia',  ['https://rpc.sepolia.org','https://1rpc.io/sepolia']) },
+  { name:'Arbitrum One',       key:'arbitrum',  rpc: rpcList('arbitrum', ['https://arb1.arbitrum.io/rpc','https://1rpc.io/arb']) },
+  { name:'Optimism',           key:'optimism',  rpc: rpcList('optimism', ['https://mainnet.optimism.io','https://1rpc.io/op']) },
+  { name:'Base',               key:'base',      rpc: rpcList('base',     ['https://mainnet.base.org','https://1rpc.io/base']) },
+  { name:'Polygon PoS',        key:'polygon',   rpc: rpcList('polygon',  ['https://polygon-rpc.com','https://1rpc.io/poly']) },
+  { name:'Linea',              key:'linea',     rpc: rpcList('linea',    ['https://rpc.linea.build']) },
 
-  { name:'Scroll',           key:'scroll',   rpc:['https://rpc.scroll.io'] },
-  { name:'zkSync Era',       key:'zksync',   rpc:['https://mainnet.era.zksync.io'] },
-  { name:'Polygon zkEVM',    key:'zkevm',    rpc:['https://zkevm-rpc.com'] },
-  { name:'BNB Smart Chain',  key:'bsc',      rpc:['https://bsc-dataseed1.bnbchain.org'] },
-  { name:'Arbitrum Nova',    key:'arbnova',  rpc:['https://nova.arbitrum.io/rpc'] },
-  { name:'Blast',            key:'blast',    rpc:['https://rpc.blast.io'] },
-  { name:'Zora',             key:'zora',     rpc:['https://rpc.zora.energy'] },
-  { name:'Mode',             key:'mode',     rpc:['https://mainnet.mode.network'] },
-  { name:'Taiko',            key:'taiko',    rpc:['https://rpc.mainnet.taiko.xyz'] },
+  { name:'zkSync Era',         key:'zksync',    rpc:['https://mainnet.era.zksync.io','https://1rpc.io/zksync2'] },
+  { name:'Polygon zkEVM',      key:'zkevm',     rpc:['https://zkevm-rpc.com','https://1rpc.io/pzkevm'] },
+  { name:'Scroll',             key:'scroll',    rpc:['https://rpc.scroll.io','https://1rpc.io/scroll'] },
 
-  // testnet extra
-  { name:'Monad Testnet',    key:'monadtest', rpc:['https://testnet-rpc.monad.xyz'] }
+  { name:'BNB Smart Chain',    key:'bsc',       rpc:['https://bsc-dataseed.binance.org','https://rpc.ankr.com/bsc'] },
+  { name:'Avalanche C-Chain',  key:'avalanche', rpc:['https://api.avax.network/ext/bc/C/rpc','https://1rpc.io/avax/c'] },
+  { name:'Fantom Opera',       key:'fantom',    rpc:['https://rpc.fantom.network','https://1rpc.io/ftm'] },
+  { name:'Gnosis Chain',       key:'gnosis',    rpc:['https://rpc.gnosischain.com','https://1rpc.io/gnosis'] },
+  { name:'Celo',               key:'celo',      rpc:['https://forno.celo.org','https://1rpc.io/celo'] },
+  { name:'Cronos',             key:'cronos',    rpc:['https://evm.cronos.org','https://cronos-evm.publicnode.com'] },
+  { name:'Kava EVM',           key:'kava',      rpc:['https://evm.kava.io','https://evm.data.kava.io'] },
+  { name:'Aurora',             key:'aurora',    rpc:['https://mainnet.aurora.dev','https://1rpc.io/aurora'] },
+  { name:'Moonbeam',           key:'moonbeam',  rpc:['https://rpc.api.moonbeam.network','https://1rpc.io/glmr'] },
+  { name:'Moonriver',          key:'moonriver', rpc:['https://rpc.api.moonriver.moonbeam.network','https://1rpc.io/movr'] },
+
+  { name:'Arbitrum Nova',      key:'arbnova',   rpc:['https://nova.arbitrum.io/rpc','https://1rpc.io/arb/nova'] },
+  { name:'Blast',              key:'blast',     rpc:['https://rpc.blast.io','https://1rpc.io/blast'] },
+  { name:'Zora',               key:'zora',      rpc:['https://rpc.zora.energy','https://1rpc.io/zora'] },
+  { name:'Mode',               key:'mode',      rpc:['https://mainnet.mode.network','https://1rpc.io/mode'] },
+  { name:'Taiko',              key:'taiko',     rpc:['https://rpc.mainnet.taiko.xyz','https://1rpc.io/taiko'] },
+
+  // Testnets
+  { name:'Base Sepolia',       key:'base-sepolia', rpc:['https://sepolia.base.org','https://1rpc.io/base/sepolia'] },
+  { name:'Optimism Sepolia',   key:'op-sepolia',   rpc:['https://sepolia.optimism.io'] },
+  { name:'Arbitrum Sepolia',   key:'arb-sepolia',  rpc:['https://sepolia-rollup.arbitrum.io/rpc'] },
+  { name:'Polygon Amoy',       key:'amoy',         rpc:['https://rpc-amoy.polygon.technology'] },
+  { name:'Scroll Sepolia',     key:'scroll-sepolia', rpc:['https://sepolia-rpc.scroll.io'] },
+  { name:'Linea Sepolia',      key:'linea-sepolia',  rpc:['https://rpc.sepolia.linea.build'] },
+  { name:'Blast Sepolia',      key:'blast-sepolia',  rpc:['https://sepolia.blast.io'] },
+  { name:'Zora Sepolia',       key:'zora-sepolia',   rpc:['https://sepolia.rpc.zora.energy'] },
+  { name:'Mode Sepolia',       key:'mode-sepolia',   rpc:['https://sepolia.mode.network'] },
+  { name:'Taiko Hekla',        key:'taiko-hekla',    rpc:['https://hekla.taiko.xyz'] },
+
+  { name:'Monad Testnet',      key:'monadtest',  rpc:['https://testnet-rpc.monad.xyz'] }
 ];
 
+/* ===== RPC Ping helper (timeout) ===== */
+async function pingRpc(url, timeoutMs = 3000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort('timeout'), timeoutMs);
+  const started = Date.now();
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] })
+    });
+    const ms = Date.now() - started;
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    if (!j || !j.result) throw new Error('Bad JSON-RPC');
+    return { ok: true, ms, chainIdHex: j.result };
+  } catch (e) {
+    return { ok: false, err: e.message || String(e) };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/* ===== Chain utils ===== */
 const getAllChains = () => {
   const extra = loadJSON('./chains.json', []);
   const map = new Map(DEFAULT_CHAINS.map(c=>[c.key,c]));
@@ -96,9 +147,8 @@ const rpcFor = (keyOrName, override) => override || (getAllChains().find(c=>c.ke
 
 async function getProvider(rpcUrl){
   const u = Array.isArray(rpcUrl)?rpcUrl[0]:rpcUrl;
-  const p = new ethers.JsonRpcProvider(u);
-  await p.send('eth_chainId',[]);
-  return p;
+  // Jangan paksa call saat init; biarkan ethers resolve saat getNetwork() dipanggil.
+  return new ethers.JsonRpcProvider(u);
 }
 async function getWallet(rpcUrl){
   if (!PRIVATE_KEY) throw new Error('PRIVATE_KEY belum diisi');
@@ -164,9 +214,8 @@ function printSection(title, list, colorCode = 36) {
   list.forEach((item, i) => {
     const sig = shortSig(item);
     const mut = item.stateMutability || '';
-    const line = `${pad(String(i + 1), 3)}  ${pad(sig, 44)}  ${pad(mut, 12)}`;
-    const c = mut === 'payable' ? 33 : (mut === 'nonpayable' ? 35 : 32);
-    console.log(color(c, line));
+    console.log(color(mut === 'payable' ? 33 : (mut === 'nonpayable' ? 35 : 32),
+      `${pad(String(i + 1), 3)}  ${pad(sig, 44)}  ${pad(mut, 12)}`));
   });
 }
 async function printAbiReportPretty(abi) {
@@ -192,7 +241,7 @@ async function printAbiReportPretty(abi) {
   return { writeFns: write, mintCandidates: mint };
 }
 
-/* ===== ABI Finder flow (dipakai Menu 2 juga) ===== */
+/* ===== ABI Finder flow ===== */
 async function abiFinderFlow(chainKey, contractAddr, ask) {
   console.log('🔎 Mengambil ABI dari explorer…');
   const abi = await getAbiFromExplorer(chainKey, contractAddr);
@@ -233,8 +282,9 @@ async function abiFinderFlow(chainKey, contractAddr, ask) {
   return { abi, fnList: null };
 }
 
-/* ===== Mint core (ethers v6) ===== */
+/* ===== Mint core (ethers v6) + No-ABI Blast ===== */
 const DEFAULT_FUNCS = ['mint','publicMint','mintPublic','safeMint','claim','mintTo','mintNFT'];
+
 function buildAbi(funcs){
   const set=new Set();
   for (const f of funcs){
@@ -250,6 +300,11 @@ function buildAbi(funcs){
   set.add('function cost() view returns (uint256)');
   return [...set];
 }
+function toSignatureFromItem(item){
+  const name = item.name || '';
+  const types = (item.inputs||[]).map(i => i.type).join(',');
+  return `${name}(${types})`;
+}
 async function smartPick(c,fn,qty,o){
   try{ await c[fn].staticCall(o); return {fn,mode:'noarg'}; }catch{}
   try{ await c[fn].staticCall(qty,o); return {fn,mode:'qty'}; }catch{}
@@ -261,15 +316,41 @@ function loosePickByAbi(abi, fnName) {
   const it = (abi||[]).find(x=>x?.type==='function' && x.name===fnName);
   if (!it) return null;
   const ins = (it.inputs||[]);
-  if (ins.length===0) return { fn:fnName, mode:'noarg' };
-  if (ins.length===1 && /^uint(256|64|32)$/.test(ins[0].type)) return { fn:fnName, mode:'qty' };
+  const sig = toSignatureFromItem(it);
+  if (ins.length===0) return { fn:fnName, sig, mode:'noarg' };
+  if (ins.length===1 && /^uint(256|64|32)$/.test(ins[0].type)) return { fn:fnName, sig, mode:'qty' };
   if (ins.length===2) {
     const a=ins[0].type, b=ins[1].type;
-    if (a==='address' && /^uint(256|64|32)$/.test(b)) return { fn:fnName, mode:'to_qty' };
-    if (/^uint(256|64|32)$/.test(a) && b==='address') return { fn:fnName, mode:'qty_to' };
+    if (a==='address' && /^uint(256|64|32)$/.test(b)) return { fn:fnName, sig, mode:'to_qty' };
+    if (/^uint(256|64|32)$/.test(a) && b==='address') return { fn:fnName, sig, mode:'qty_to' };
   }
-  return null;
+  return { fn:fnName, sig, mode:'unknown' };
 }
+
+/* ===== No-ABI probing helpers ===== */
+const COMMON_MINT_NAMES = [
+  'mint', 'publicMint', 'safeMint', 'mintPublic', 'mintNFT',
+  'purchase', 'buy', 'claim', 'whitelistMint', 'allowlistMint'
+];
+function signatureCandidatesFor(name) {
+  return [
+    `function ${name}() payable`,
+    `function ${name}(uint256 quantity) payable`,
+    `function ${name}(address to, uint256 quantity) payable`,
+    `function ${name}(uint256 quantity, address to) payable`,
+    `function ${name}(uint256 quantity, bytes32[] proof) payable`,
+    `function ${name}(bytes32[] proof, uint256 quantity) payable`,
+    `function ${name}(address to, uint256 quantity, bytes32[] proof) payable`
+  ];
+}
+async function simulateBySignature(contract, iface, sig, args, valueWei = 0n) {
+  try {
+    const data = iface.encodeFunctionData(sig, args);
+    await contract.runner.call({ to: contract.target, data, value: valueWei });
+    return true;
+  } catch { return false; }
+}
+
 async function discoverPrice(c){
   for (const f of ['price','mintPrice','cost']){
     if (typeof c[f]==='function'){
@@ -283,6 +364,7 @@ const toWei = (eth)=> (eth!=null && eth!=='') ? ethers.parseEther(String(eth)) :
 async function mintCore({ wallet, contractAddr, qty, valueWei, fnList, abiOverride }){
   const hasRealAbi = Array.isArray(abiOverride) && abiOverride.length;
   const abi = hasRealAbi ? abiOverride : buildAbi(fnList);
+
   const c = new ethers.Contract(contractAddr, abi, wallet);
 
   let val = valueWei ?? 0n;
@@ -293,32 +375,131 @@ async function mintCore({ wallet, contractAddr, qty, valueWei, fnList, abiOverri
     ? { value: val, maxFeePerGas: fee.maxFeePerGas, maxPriorityFeePerGas: fee.maxPriorityFeePerGas }
     : { value: val, gasPrice: fee.gasPrice };
 
-  // 1) coba staticCall
-  let picked=null;
-  for (const fn of fnList){ picked=await smartPick(c,fn,qty,overrides); if(picked) break; }
-  // 2) fallback pola ABI
-  if (!picked && hasRealAbi){ for(const fn of fnList){ const lp=loosePickByAbi(abi,fn); if(lp){picked=lp; break;} } }
+  // ==== PICK FUNCTION ====
+  let picked = null;
+
+  // 1) Ada ABI asli → signature penuh
+  if (hasRealAbi){
+    for (const fn of fnList){
+      const lp = loosePickByAbi(abi, fn);
+      if (lp) { picked = lp; break; }
+    }
+  }
+
+  // 2) No-ABI Blast: explorer gagal + user override → coba signature umum (simulasi)
+  if (!picked && !hasRealAbi && Array.isArray(fnList) && fnList.length) {
+    const baseName = fnList[0];
+    const fragStrings = [
+      ...signatureCandidatesFor(baseName),
+      ...COMMON_MINT_NAMES.filter(n => n !== baseName).flatMap(signatureCandidatesFor)
+    ];
+    const iface = new ethers.Interface(fragStrings);
+    const probe = new ethers.Contract(contractAddr, iface, wallet);
+
+    const argSets = [
+      [],                              // ()
+      [qty],                           // (uint256)
+      [wallet.address, qty],           // (address,uint256)
+      [qty, wallet.address]            // (uint256,address)
+    ];
+
+    outer:
+    for (const frag of fragStrings) {
+      const sig = frag.replace(/^function\s+/, '').replace(/\s+payable$/, '');
+      for (const argsTry of argSets) {
+        const ok = await simulateBySignature(probe, iface, sig, argsTry, val);
+        if (ok) {
+          const mode =
+            argsTry.length === 0 ? 'noarg' :
+            (argsTry.length === 1 ? 'qty' :
+            (argsTry[0] === wallet.address ? 'to_qty' : 'qty_to'));
+          picked = { fn: sig.split('(')[0], sig, mode };
+          break outer;
+        }
+      }
+    }
+  }
+
+  // 3) Fallback heuristik lama
+  if (!picked){
+    for (const fn of fnList){ picked=await smartPick(c,fn,qty,overrides); if(picked) break; }
+  }
+
   if (!picked) throw new Error('Tidak ada fungsi mint yang cocok');
 
+  // ==== EXECUTION ====
   try{
-    let est;
-    if (picked.mode==='noarg')       est = await c.estimateGas[picked.fn](overrides);
-    else if (picked.mode==='qty')    est = await c.estimateGas[picked.fn](qty, overrides);
-    else if (picked.mode==='to_qty') est = await c.estimateGas[picked.fn](wallet.address, qty, overrides);
-    else                             est = await c.estimateGas[picked.fn](qty, wallet.address, overrides);
-    overrides.gasLimit = (est*120n)/100n;
-  }catch{}
+    if (DRY_RUN){
+      if (picked.sig){
+        const iface = new ethers.Interface(abi);
+        const data =
+          picked.mode==='noarg' ? iface.encodeFunctionData(picked.sig, []) :
+          picked.mode==='qty'    ? iface.encodeFunctionData(picked.sig, [qty]) :
+          picked.mode==='to_qty' ? iface.encodeFunctionData(picked.sig, [wallet.address, qty]) :
+          picked.mode==='qty_to' ? iface.encodeFunctionData(picked.sig, [qty, wallet.address]) :
+                                   iface.encodeFunctionData(picked.sig, []);
+        await c.runner.call({ to: c.target, data, value: overrides.value || 0n });
+        return { dryRun:true, hash:null, status:1, fn:picked.fn, sig:picked.sig, mode:picked.mode };
+      } else {
+        await c.runner.call({ to: c.target, data: '0x', value: overrides.value || 0n });
+        return { dryRun:true, hash:null, status:1, fn:picked.fn, mode:picked.mode };
+      }
+    }
 
-  if (DRY_RUN) return { dryRun:true, hash:null, status:1, fn:picked.fn, mode:picked.mode };
+    // Estimasi gas (best-effort)
+    try{
+      if (picked.sig){
+        const fn = c.getFunction(picked.sig);
+        let est;
+        if (picked.mode==='noarg')       est = await c.estimateGas[picked.sig](overrides);
+        else if (picked.mode==='qty')    est = await c.estimateGas[picked.sig](qty, overrides);
+        else if (picked.mode==='to_qty') est = await c.estimateGas[picked.sig](wallet.address, qty, overrides);
+        else if (picked.mode==='qty_to') est = await c.estimateGas[picked.sig](qty, wallet.address, overrides);
+        if (est) overrides.gasLimit = (est*120n)/100n;
+      } else {
+        let est;
+        if (picked.mode==='noarg')       est = await c.estimateGas[picked.fn](overrides);
+        else if (picked.mode==='qty')    est = await c.estimateGas[picked.fn](qty, overrides);
+        else if (picked.mode==='to_qty') est = await c.estimateGas[picked.fn](wallet.address, qty, overrides);
+        else                             est = await c.estimateGas[picked.fn](qty, wallet.address, overrides);
+        if (est) overrides.gasLimit = (est*120n)/100n;
+      }
+    }catch{}
 
-  let tx;
-  if (picked.mode==='noarg')        tx = await c[picked.fn](overrides);
-  else if (picked.mode==='qty')     tx = await c[picked.fn](qty, overrides);
-  else if (picked.mode==='to_qty')  tx = await c[picked.fn](wallet.address, qty, overrides);
-  else                              tx = await c[picked.fn](qty, wallet.address, overrides);
+    // Kirim tx
+    let tx, rcpt;
+    if (picked.sig){
+      const fn = c.getFunction(picked.sig);
+      if (picked.mode==='noarg')        tx = await fn(overrides);
+      else if (picked.mode==='qty')     tx = await fn(qty, overrides);
+      else if (picked.mode==='to_qty')  tx = await fn(wallet.address, qty, overrides);
+      else if (picked.mode==='qty_to')  tx = await fn(qty, wallet.address, overrides);
+      else                              tx = await fn(overrides);
+    } else {
+      if (picked.mode==='noarg')        tx = await c[picked.fn](overrides);
+      else if (picked.mode==='qty')     tx = await c[picked.fn](qty, overrides);
+      else if (picked.mode==='to_qty')  tx = await c[picked.fn](wallet.address, qty, overrides);
+      else                              tx = await c[picked.fn](qty, wallet.address, overrides);
+    }
 
-  const rcpt = await tx.wait();
-  return { dryRun:false, hash:tx.hash, status:rcpt.status, block:rcpt.blockNumber, fn:picked.fn, mode:picked.mode };
+    rcpt = await tx.wait();
+    return {
+      dryRun:false, hash:tx.hash, status:rcpt.status, block:rcpt.blockNumber,
+      fn:picked.fn, sig:picked.sig, mode:picked.mode
+    };
+  }catch(e){
+    // diagnostics
+    let msg = e.reason || e.shortMessage || e.message || String(e);
+    const data = e?.data || e?.error?.data;
+    if (typeof data === 'string' && data.startsWith('0x') && data.length >= 10) {
+      const selector = data.slice(0, 10).toLowerCase();
+      if (selector === '0x08c379a0') {
+        try { const ifaceErr = new ethers.Interface(['error Error(string)']); const [reason] = ifaceErr.decodeErrorResult('Error(string)', data); msg = `revert: ${reason}`; } catch {}
+      } else if (selector === '0x4e487b71') { msg = 'revert: Panic(uint256)'; }
+      else { msg += ` (revert selector: ${selector})`; }
+    }
+    throw new Error(msg);
+  }
 }
 
 /* ===== Actions ===== */
@@ -328,13 +509,10 @@ async function actionCheckBalance(){
     const { key, rpc } = await pickChain();
     const url = rpc || rpcFor(key);
     const w = await getWallet(url);
-
-    // ethers v6: saldo harus via provider
     const [bal, net] = await Promise.all([
       w.provider.getBalance(w.address),
       w.provider.getNetwork()
     ]);
-
     console.log(`\nAlamat: ${w.address}\nChain : ${net.name} (${net.chainId})\nSaldo : ${fmtEth(bal)} native\n`);
   }catch(e){ console.log('Gagal cek saldo:', e.reason||e.message); }
   await ask('\n(Enter untuk kembali)');
@@ -360,9 +538,11 @@ async function actionMintSingle(){
     const w = await getWallet(rpc || rpcFor(key));
     const res = await mintCore({
       wallet:w, contractAddr:contract, qty,
-      valueWei: toWei(valueEth), fnList:selected, abiOverride: abi||undefined
+      valueWei: (valueEth && valueEth!=='') ? ethers.parseEther(String(valueEth)) : undefined,
+      fnList:selected, abiOverride: abi||undefined
     });
-    console.log(res.dryRun ? 'DRY_RUN=true → simulasi OK.' : `Tx: ${res.hash} • ${res.status?'OK':'FAIL'}`);
+    console.log(res.dryRun ? 'DRY_RUN=true → simulasi OK.' :
+      `Tx: ${res.hash} • ${res.status?'OK':'FAIL'}${res.sig?` • sig=${res.sig}`:''}`);
   }catch(e){ console.log('Error:', e.reason||e.shortMessage||e.message); }
   await ask('\n(Enter untuk kembali)');
 }
@@ -397,7 +577,8 @@ async function actionMintOmni(){
       const net = await w.provider.getNetwork();
       console.log(`\n=== ${t.name || net.name} (${net.chainId}) ===`);
       const res = await mintCore({ wallet:w, contractAddr:t.contract, qty, valueWei:val, fnList, abiOverride:abi });
-      console.log(res.dryRun ? '[DRY] OK' : `Tx ${res.hash} • ${res.status?'OK':'FAIL'}`);
+      console.log(res.dryRun ? '[DRY] OK' :
+        `Tx ${res.hash} • ${res.status?'OK':'FAIL'}${res.sig?` • sig=${res.sig}`:''}`);
     }catch(e){ console.log('Target error:', e.reason||e.shortMessage||e.message); }
   }
   await ask('\n(Enter untuk kembali)');
@@ -423,56 +604,39 @@ async function actionAddTarget(){
   console.log('Target ditambahkan.');
   await ask('\n(Enter untuk kembali)');
 }
-async function actionListTargets(){ clearScreen(); const t=loadJSON('./targets.json',[]); if(!t.length)console.log('targets.json kosong.'); else listTargets(); await ask('\n(Enter untuk kembali)'); }
-async function actionDeleteTarget(){
-  clearScreen();
-  const targets = loadJSON('./targets.json', []);
-  if (!targets.length){ console.log('targets.json kosong.'); await ask('\n(Enter untuk kembali)'); return; }
-  listTargets();
-  const idx = Number(await ask('Hapus nomor: ')) - 1;
-  if (idx<0||idx>=targets.length){ console.log('Nomor tidak valid.'); await ask('\n(Enter untuk kembali)'); return; }
-  const sure = await ask(`Yakin hapus ${targets[idx].name}? (y/N): `);
-  if (!yes(sure)){ console.log('Batal.'); await ask('\n(Enter untuk kembali)'); return; }
-  targets.splice(idx,1); saveJSON('./targets.json',targets);
-  console.log('Terhapus.'); await ask('\n(Enter untuk kembali)');
-}
 
-async function actionGasNow(){
-  clearScreen();
-  try{
-    const { key, rpc } = await pickChain();
-    const prov = await getProvider(rpc || rpcFor(key));
-    const [net, fee] = await Promise.all([ prov.getNetwork(), prov.getFeeData() ]);
-    console.log(`\nChain: ${net.name} (${net.chainId})`);
-    let g;
-    if (fee.maxFeePerGas && fee.maxPriorityFeePerGas){
-      g = Number(ethers.formatUnits(fee.maxFeePerGas,'gwei'));
-      console.log(`maxFeePerGas   : ${g.toFixed(2)} gwei`);
-      console.log(`maxPriorityFee : ${Number(ethers.formatUnits(fee.maxPriorityFeePerGas,'gwei')).toFixed(2)} gwei`);
-    }else{
-      g = Number(ethers.formatUnits(fee.gasPrice??0n,'gwei'));
-      console.log(`gasPrice       : ${g.toFixed(2)} gwei`);
-    }
-    if (g<=20) console.log(color(32,'Keterangan: Gas sedang rendah ✔'));
-    else if (g<=40) console.log(color(33,'Keterangan: Gas sedang sedang'));
-    else console.log(color(31,'Keterangan: Gas sedang tinggi ⚠'));
-  }catch(e){ console.log('Gagal membaca gas:', e.message); }
-  await ask('\n(Enter untuk kembali)');
-}
-
+/* ===== Test RPCs (pakai pingRpc) ===== */
 async function actionTestRPCs(){
   clearScreen();
   const CHAINS = getAllChains();
   console.log('Testing RPC endpoints…\n');
+
+  const CONCURRENCY = 4;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
   for (const c of CHAINS){
-    const list = Array.isArray(c.rpc)?c.rpc:[c.rpc];
-    let ok=null, ms=Infinity;
-    for (const u of list){
-      const t=Date.now();
-      try{ const p=new ethers.JsonRpcProvider(u); await p.send('eth_chainId',[]); const d=Date.now()-t; if(d<ms){ms=d; ok=u;} }catch{}
+    const urls = Array.isArray(c.rpc) ? c.rpc : [c.rpc].filter(Boolean);
+    if (!urls.length) { console.log(`${color(31,'✖')} ${c.name} → no RPC configured`); continue; }
+
+    const results = [];
+    for (let i=0; i<urls.length; i+=CONCURRENCY){
+      await Promise.all(
+        urls.slice(i, i+CONCURRENCY).map(async (u, idx) => {
+          if (i || idx) await sleep(120);
+          const res = await pingRpc(u, 3500);
+          results.push({ url: u, ...res });
+        })
+      );
     }
-    if (ok) console.log(`${color(32,'✔')} ${c.name} → fastest ${color(36,ok)} (${ms} ms)`);
-    else    console.log(`${color(31,'✖')} ${c.name} → no working RPC`);
+
+    const oks = results.filter(r => r.ok).sort((a,b) => a.ms - b.ms);
+    if (oks.length) {
+      const fastest = oks[0];
+      console.log(`${color(32,'✔')} ${c.name} → fastest ${color(36,fastest.url)} (${fastest.ms} ms)`);
+    } else {
+      const uniqErr = [...new Set(results.map(r => r.err || 'unknown'))].slice(0,2).join(' | ');
+      console.log(`${color(31,'✖')} ${c.name} → all RPC failed (${uniqErr})`);
+    }
   }
   await ask('\n(Enter untuk kembali)');
 }
@@ -517,7 +681,7 @@ async function actionParallelMint(){
   out.forEach((r,i)=>{
     const tag = keys[i].slice(0,10)+'…';
     if (r.status==='fulfilled' && r.value.ok) {
-      const v=r.value.res; console.log(`#${i+1} ${tag} → ${v.status?'OK':'FAIL'} ${v.hash||''}`);
+      const v=r.value.res; console.log(`#${i+1} ${tag} → ${v.status?'OK':'FAIL'} ${v.hash||''}${v.sig?` • sig=${v.sig}`:''}`);
     } else if (r.status==='fulfilled') {
       console.log(`#${i+1} ${tag} → ERROR: ${r.value.err}`);
     } else {
