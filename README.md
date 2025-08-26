@@ -1,151 +1,165 @@
-# NFT AIO Bot (by ITSMorvo)
+# BOT-MINT-AIO
 
-A powerful and flexible **NFT Minting All-in-One Bot** built with **Node.js** and **ethers.js v6**.  
-Supports multiple EVM chains, automatic ABI detection, multi-wallet parallel minting, and more.
+**AIO NFT Mint Bot**  
+by **ITSMorvo** (community fork & patches)
 
----
-
-## Features
-- **Automatic Minting** on multiple EVM chains (Ethereum, Polygon, Arbitrum, Optimism, Base, Linea, Scroll, zkSync, BSC, etc.).
-- **Multi-wallet Parallel Minting**: run mints for multiple wallets at once.
-- **Automatic ABI Finder**: fetch ABI from explorer and suggest mint functions.
-- **Fallback minimal ABI**: if explorer ABI fails.
-- **Check balance & gas** with status info (low/medium/high).
-- **RPC Tester**: scan all RPCs and pick fastest one.
-- **Dynamic Chain Picker** with pagination & manual RPC.
-- **DRY-RUN Mode**: simulate mint without sending tx (set `DRY_RUN=true` in `.env`).
-- **Targets File (targets.json)**: store multiple contracts for batch mints.
+Bot NFT universal untuk mint multi-chain dengan:
+- **Auto ABI detection** dari explorer (Etherscan, BaseScan, dsb).
+- **No-ABI Blast mode** → override nama fungsi (`mint`, `publicMint`, dll.) dan bot otomatis coba signature umum.
+- **Multi-chain support** (Ethereum, Arbitrum, Optimism, Base, Polygon, Linea, zkSync, Scroll, Blast, Mode, Taiko, dll).
+- **RPC failover**: Alchemy (jika ada key) → fallback ke RPC publik (1RPC, DRPC, Ankr, dsb).
+- **Multi-wallet minting** (paralel, cocok buat farming).
+- **Targets.json**: simpan list kontrak yang mau dimint, bisa batch otomatis.
+- **Pretty ABI viewer**: lihat fungsi, events, mint candidates langsung dari explorer.
 
 ---
 
-## Requirements
-- **Node.js v18+**
-- **npm or yarn**
-- **Alchemy API Key** (optional but recommended for stable RPC)
-- **Private Key** of your wallet (use test wallets first!)
+## ⚙️ Setup
 
----
-
-## Installation
+### 1. Clone repo
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/stitnappp/BOT-MINT-AIO.git
+cd BOT-MINT-AIO
+
+2. Install dependencies
+
+Pastikan Node.js v18+:
+
 npm install
 
-Create a .env file (copy the template):
+3. Config .env
 
-# Required
-PRIVATE_KEY=your_private_key_here
+Buat file .env di root:
 
-# Optional Alchemy API Key
-ALCHEMY_KEY=your_alchemy_api_key_here
+# === Wallet ===
+PRIVATE_KEY=0xYOUR_PRIVATE_KEY
+# MULTI_PRIVATE_KEYS=0xkey1,0xkey2,0xkey3
 
-# Simulation mode (true/false)
-DRY_RUN=false
+# === Alchemy (opsional) ===
+ALCHEMY_KEY=your_alchemy_key
 
-# Optional: API keys for explorers (for ABI fetch)
+# === Explorer API Keys (opsional) ===
 ETHERSCAN_API_KEY=
-POLYGONSCAN_API_KEY=
 ARBISCAN_API_KEY=
 BASESCAN_API_KEY=
+OPTIMISTIC_ETHERSCAN_API_KEY=
+POLYGONSCAN_API_KEY=
 LINEASCAN_API_KEY=
 SCROLLSCAN_API_KEY=
 
+# === Debug ===
+DRY_RUN=false
 
----
-
-Usage
-
-Run the bot:
-
-node aio.mjs
-
-Or if you set a script in package.json:
+4. Run
 
 npm start
 
-Menu options:
-
-1. Check balance
-
-
-2. Mint single contract (manual + ABI Finder)
-
-
-3. Mint multiple contracts (targets.json)
-
-
-4. Add target
-
-
-5. View targets
-
-
-6. Delete target
-
-
-7. Check gas price
-
-
-8. Mint parallel (multi-wallet)
-
-
-9. Test RPCs
-
-
-10. ABI Finder only (no mint)
-
-
-11. Exit
-
-
-
 
 ---
 
-Targets File (Example)
+📑 Features
 
-Add a targets.json:
+Menu utama:
+
+1. Cek saldo wallet
+
+
+2. Mint 1 kontrak (manual, bisa override fungsi)
+
+
+3. Mint multi target (targets.json)
+
+
+4. Tambah target
+
+
+5. Lihat target
+
+
+6. Hapus target
+
+
+7. Cek gas sekarang
+
+
+8. Multi-wallet mint (paralel)
+
+
+9. Test RPC endpoints (auto pilih tercepat)
+
+
+10. ABI Finder (lihat fungsi tanpa mint)
+
+
+11. Keluar
+
+
+
+targets.json example:
+
 
 [
   {
-    "name": "sepolia",
-    "contract": "0x1234...abcd",
+    "name": "Base",
+    "contract": "0x1234abcd...",
     "qty": 1,
     "valueEth": "0.001",
-    "functionCandidates": ["mint","claim"]
+    "functionCandidates": ["mint","publicMint"]
   }
 ]
 
 
 ---
 
-Changelog
+🛠️ Development
 
-v2.0 – 2025-08-25
+Tambahkan chain baru di chains.json:
 
-Added ABI Finder UI (with mint candidate suggestions)
 
-Improved fallback mint detection (works even if static call fails)
+[
+  { "name": "Abstract", "key": "abstract", "rpc": ["https://rpc.abstract.org"] }
+]
 
-Enhanced gas checker with low/medium/high status
+Bot otomatis merge dengan default chain list.
 
-Added support for many EVM chains (incl. testnets)
 
-Added RPC scanner and fastest RPC picker
+---
 
-Added DRY_RUN simulation mode
+⚠️ Disclaimer
 
-Improved multi-wallet parallel mint
+Educational & research purposes only.
 
-Security: moved API keys to .env (no hardcoded API keys)
+Gunakan wallet dummy/testnet dulu sebelum mainnet.
+
+Penulis/kontributor tidak bertanggung jawab atas penggunaan yang salah.
 
 
 
 ---
 
-Disclaimer
+---
 
-Use this bot at your own risk.
-Always test on testnets before mainnet.
-The author is not responsible for any financial losses.
+## 📜 CHANGELOG.md
+
+```markdown
+# Changelog
+
+## [1.2.0] – 2025-08-26
+### Added
+- **No-ABI Blast Mode**: override nama fungsi (contoh `mint`) → bot auto-simulate berbagai signature (`mint(uint256)`, `mint(address,uint256)`, dll) sampai ketemu yang valid.
+- **Pretty ABI Viewer**: summary fungsi (write/view/events) + highlight mint candidates.
+- **RPC Failover**: Alchemy (jika ada key) → fallback ke RPC publik (DRPC, 1RPC, Ankr).
+- **Multi-chain extended**: +Blast, Zora, Mode, Taiko, Monad testnet, dan banyak lainnya.
+- **Multi-wallet mint**: support `MULTI_PRIVATE_KEYS` dari `.env` atau `wallets.txt`.
+
+### Changed
+- **Refactor `aio.mjs`**: modular ABI fetch, improved menu, clear error handling.
+- **Improve `actionTestRPCs`**: pakai `pingRpc` (fetch JSON-RPC dengan timeout) → lebih stabil, tidak spam error "failed to detect network".
+- **Provider init**: tidak lagi `send('eth_chainId')` paksa di awal → mengurangi error di RPC publik.
+- **Gas estimation**: otomatis +20% buffer sebelum tx.
+
+### Fixed
+- Mint error: “Tidak ada fungsi mint yang cocok” → sekarang fallback ke No-ABI Blast.
+- Error handling: decode custom revert message (`Error(string)`, `Panic(uint256)`).
+- DRY_RUN mode lebih konsisten: simulasi tx dengan data encoded.
+- Package.json disinkronisasi dengan ESM + ethers v6.
